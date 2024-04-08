@@ -1,0 +1,7 @@
+*.wasm
+node_modules/
+dist/
+tmp/
+build/
+rubies/
+*.wasm
