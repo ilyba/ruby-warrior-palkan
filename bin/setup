@@ -1,0 +1,29 @@
+#!/bin/sh
+
+set -e
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+bundle
+
+cd "$SCRIPT_DIR/../web"
+
+which rustup-init || brew install rustup && rustup-init -y && source ~/.profile
+rustup toolchain install 1.74.0
+export RUSTUP_TOOLCHAIN=1.74.0
+
+rm -rf "$SCRIPT_DIR/../web/build"
+rm -rf "$SCRIPT_DIR/../web/rubies"
+rm -rf "$SCRIPT_DIR/../web/ruby-web.wasm"
+rm -rf "$SCRIPT_DIR/../web/src/ruby-warrior-web.wasm"
+
+which wasi-vfs || curl -LO "https://github.com/kateinoigakukun/wasi-vfs/releases/download/v0.5.2/wasi-vfs-cli-aarch64-apple-darwin.zip" && \
+  unzip wasi-vfs-cli-aarch64-apple-darwin.zip && \
+  sudo mv wasi-vfs /usr/local/bin/wasi-vfs
+
+bundle
+bundle exec rbwasm build -o ruby-web.wasm
+mv rubies/ruby-*/usr/local/bin/ruby ruby.wasm
+ls src/ruby-warrior-web.wasm || wasi-vfs pack ruby-web.wasm --dir ./src::/app --dir ../bin::/app/bin --dir ../lib::/app/lib --dir ../templates::/app/templates --dir ../towers::/app/towers -o src/ruby-warrior-web.wasm
+yarn
+
