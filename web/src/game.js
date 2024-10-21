@@ -1,8 +1,16 @@
+import term2html from "./term2html";
+
 class OutputPrinter {
   RESET_PHRASES =
     /(- turn \d+ -|Success! You have found the stairs|CONGRATULATIONS!|Sorry, you failed level)/;
 
   IGNORE_PHRASES = /(\[yn\]|See the updated README)/;
+
+  sanitizeHTML(text) {
+    var element = document.createElement('div');
+    element.innerText = text;
+    return element.innerHTML;
+  }
 
   constructor(el) {
     this.el = el;
@@ -14,9 +22,17 @@ class OutputPrinter {
     if (this.IGNORE_PHRASES.test(val)) return;
 
     if (this.RESET_PHRASES.test(val)) {
-      this.el.innerText = "";
+      this.reset();
     }
-    this.el.innerText += val;
+    this.append(val);
+  }
+
+  reset() {
+    this.el.innerText = "";
+  }
+
+  append(val) {
+    this.el.innerHTML += term2html(this.sanitizeHTML(val));
   }
 
   puts(val) {
@@ -105,16 +121,28 @@ class Game {
     return this.vm.eval(`File.read("${this.gameDir}/.profile")`).toString();
   }
 
-  async play(input, output) {
+  async play(input, output, error_output) {
     window.$stdout = new OutputPrinter(output);
+    window.$stderr = new OutputPrinter(error_output);
     window.$sleeper = this.sleeper = new Sleeper();
 
     let res = await this.vm.evalAsync(`
+      require "js"
+
       File.write("${this.gameDir}/player.rb", <<~'SRC'
 ${input}
       SRC
       )
-      RubyWarrior::Runner.new(%w[-d ${this.gameDir}], StdinStub.new(%w[y y]), ExternalStdout.new).run
+      err = ExternalStderr.new
+
+      begin
+        err.reset()
+        RubyWarrior::Runner.new(%w[-d ${this.gameDir}], StdinStub.new(%w[y y]), ExternalStdout.new).run
+      rescue => e
+        err.reset()
+        err.puts("#{e.class.name}: #{e.detailed_message}\n")
+        err.puts(e.backtrace.join("\n  "))
+      end
     `);
 
     this.save();

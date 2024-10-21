@@ -8,6 +8,7 @@ const gameEl = document.getElementById("game");
 
 const editorEl = document.getElementById("editor");
 const readmeEl = document.getElementById("readme");
+const errorsEl = document.getElementById("errors");
 
 const startForm = document.getElementById("startForm");
 const nameInput = document.getElementById("nameInput");
@@ -27,6 +28,7 @@ startForm.addEventListener("submit", async (e) => {
 
   loadingEl.classList.add("hidden");
   gameEl.classList.remove("hidden");
+  errorsEl.classList.remove("hidden");
 
   const game = await start(vm, name, skillLevel);
 
@@ -35,11 +37,12 @@ startForm.addEventListener("submit", async (e) => {
 
   const runBtn = document.getElementById("runBtn");
   const turnOutput = document.getElementById("turn");
+  const errorOutput = document.getElementById("errors");
 
   runBtn.addEventListener("click", async () => {
     runBtn.setAttribute("disabled", true);
     try {
-      let success = await game.play(editor.getValue(), turnOutput);
+      let success = await game.play(editor.getValue(), turnOutput, errorOutput);
 
       if (success) {
         readmeEl.innerText = game.readme;

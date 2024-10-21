@@ -17,16 +17,16 @@ export default async function initVM() {
   console.log("Wasm app loaded");
 
   const output = [];
-  output.flush = function () {
+  output.flush = function() {
     return this.splice(0, this.length).join("\n");
   };
 
-  const setStdout = function (val) {
+  const setStdout = function(val) {
     console.log(val);
     output.push(val);
   };
 
-  const setStderr = function (val) {
+  const setStderr = function(val) {
     console.warn(val);
     output.push(`[warn] ${val}`);
   };
@@ -79,6 +79,20 @@ export default async function initVM() {
 
       def puts(val)
         JS.global[:$stdout].puts(val)
+      end
+    end
+
+    class ExternalStderr
+      def reset()
+        JS.global[:$stderr].reset()
+      end
+
+      def print(val)
+        JS.global[:$stderr].print(val)
+      end
+
+      def puts(val)
+        JS.global[:$stderr].puts(val)
       end
     end
   `);
